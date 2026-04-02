@@ -22,7 +22,7 @@ def format_top_picks(picks: list[Pick]) -> str:
             time_str = p.commence_time
 
         lines.append(
-            f"{i}) {p.league} | {p.home} vs {p.away}\n"
+            f"{i}. {p.league} | {p.home} vs {p.away}\n"
             f"   Pick: <b>{p.team}</b>\n"
             f"   Odds: {p.decimal_odds:.2f} | Confidence: {prob_pct}%\n"
             f"   {p.bookmaker} | {time_str}\n"
