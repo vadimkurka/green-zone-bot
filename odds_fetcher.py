@@ -12,7 +12,7 @@ class Pick:
     league: str
     home: str
     away: str
-    team: str  # who to bet on
+    team: str
     decimal_odds: float
     american_odds: str
     probability: float
@@ -77,7 +77,6 @@ SPORT_NAMES = {
 
 
 async def fetch_sports() -> list[str]:
-    """Get list of currently in-season sports."""
     url = f"{ODDS_API_URL}/?apiKey={ODDS_API_KEY}"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
@@ -90,7 +89,6 @@ async def fetch_sports() -> list[str]:
 
 
 async def fetch_odds(sport_key: str) -> list[dict]:
-    """Fetch odds for a specific sport."""
     url = (
         f"{ODDS_API_URL}/{sport_key}/odds/"
         f"?apiKey={ODDS_API_KEY}"
@@ -109,7 +107,6 @@ async def fetch_odds(sport_key: str) -> list[dict]:
 
 
 def extract_picks(events: list[dict], sport_key: str) -> list[Pick]:
-    """Extract Green Zone picks (80%+) from events."""
     picks = []
 
     for event in events:
@@ -129,6 +126,10 @@ def extract_picks(events: list[dict], sport_key: str) -> list[Pick]:
                     price = outcome.get("price", 0)
 
                     if price <= 0:
+                        continue
+
+                    # Skip draws — not actionable for Green Zone
+                    if team == "Draw":
                         continue
 
                     prob = implied_prob(price)
@@ -151,17 +152,17 @@ def extract_picks(events: list[dict], sport_key: str) -> list[Pick]:
 
 
 def deduplicate_picks(picks: list[Pick]) -> list[Pick]:
-    """Keep best odds per event+team (highest decimal = best payout)."""
+    """Keep ONE best pick per match — highest probability favorite."""
     best = {}
     for p in picks:
-        key = f"{p.home}_{p.away}_{p.team}"
-        if key not in best or p.decimal_odds > best[key].decimal_odds:
+        # One pick per match
+        key = f"{p.home}_{p.away}"
+        if key not in best or p.probability > best[key].probability:
             best[key] = p
     return sorted(best.values(), key=lambda x: x.probability, reverse=True)
 
 
 async def get_green_zone_picks() -> list[Pick]:
-    """Main function: fetch all sports, return Green Zone picks."""
     active_sports = await fetch_sports()
     logger.info(f"Active sports: {len(active_sports)}")
 
