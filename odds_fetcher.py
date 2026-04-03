@@ -21,6 +21,8 @@ class Pick:
 
 
 def decimal_to_american(decimal_odds: float) -> str:
+    if decimal_odds <= 1.0:
+        return "-10000"
     if decimal_odds >= 2.0:
         american = round((decimal_odds - 1) * 100)
         return f"+{american}"
